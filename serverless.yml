@@ -9,3 +9,7 @@ provider:
 functions:
   hello:
     handler: src.handler.hello
+
+plugins:
+  - serverless-python-requirements
+  - iam-roles-per-function
