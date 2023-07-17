@@ -1,15 +1,108 @@
-service: grilled-cheese-snadwitch
+service: grilled-cheese-sandwitch
+
+useDotenv: true
 
 frameworkVersion: '3'
 
 provider:
   name: aws
   runtime: python3.9
+  stage: ${opt:stage, 'dev'} # defaults to 'dev' if no option is provided
+
+package:
+  include:
+    - '!./**'
+    - './src/**'
+
+custom:
+  bucket_name: ${self:service}-${self:provider.stage}-bucket
 
 functions:
   hello:
-    handler: src.handler.hello
+    handler: src.handler.lambda_handler
+    environment:
+      BUCKET_NAME: ${self:custom.bucket_name}
+      RAPIDAPI_KEY: ${env:RAPIDAPI_KEY}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:ListBucket
+        Resource: arn:aws:s3:::${self:custom.bucket_name}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:custom.bucket_name}/*
+
+resources:
+  Resources:
+
+    GrilledCheeseSandwitchBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucket_name}
+        VersioningConfiguration:
+          Status: Enabled
+
+    GlueCrawlerRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - glue.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        Policies:
+          - PolicyName: root
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: 
+                    - 'glue:*'
+                  Resource: '*'
+
+    GlueCrawler:
+      Type: AWS::Glue::Crawler
+      Properties:
+        DatabaseName: MyGlueDatabase # replace with your database name
+        Role: !GetAtt GlueCrawlerRole.Arn
+        Targets:
+          S3Targets:
+            - Path: s3://${self:custom.bucket_name}
+        SchemaChangePolicy:
+          UpdateBehavior: 'UPDATE_IN_DATABASE'
+          DeleteBehavior: 'DEPRECATE_IN_DATABASE'
+
+    GlueJob:
+      Type: AWS::Glue::Job
+      Properties:
+        Command: 
+          Name: 'glueetl'
+          ScriptLocation: s3://${self:custom.bucket_name}/scripts/my_etl_script.py
+        Role: !GetAtt GlueCrawlerRole.Arn
+        DefaultArguments: 
+          '--TempDir': s3://${self:custom.bucket_name}/temp
+          '--enable-metrics': ''
+          '--job-bookmark-option': 'job-bookmark-enable'
+          '--job-language': 'python'
+
+    # LogicalID:
+    #   Type: AWS::Glue::Database
+    #   Properties:
+    #     CatalogId: "String" # Required
+    #     DatabaseInput:
+    #       CreateTableDefaultPermissions:
+    #         -
+    #       Description: "String"
+    #       LocationUri: "String"
+    #       Name: "String"
+    #       Parameters: JSON
 
 plugins:
   - serverless-python-requirements
-  - iam-roles-per-function
+  - serverless-iam-roles-per-function
+  - serverless-dotenv-plugin

@@ -1,6 +1,8 @@
 # Distribution / packaging
 .Python
 env/
+.venv/
+venv/
 build/
 develop-eggs/
 dist/
@@ -22,3 +24,5 @@ var/
 # node
 node_modules/
 package-lock.json
+
+.env
