@@ -15,31 +15,39 @@ package:
     - './src/**'
 
 custom:
-  bucket_name: ${self:service}-${self:provider.stage}-bucket
+  data_bucket_name: ${self:service}-${self:provider.stage}-bucket
+  etl_bucket_name: ${self:service}-${self:provider.stage}-etl-bucket
 
 functions:
   hello:
     handler: src.handler.lambda_handler
     environment:
-      BUCKET_NAME: ${self:custom.bucket_name}
+      BUCKET_NAME: ${self:custom.data_bucket_name}
       RAPIDAPI_KEY: ${env:RAPIDAPI_KEY}
     iamRoleStatements:
       - Effect: Allow
         Action:
           - s3:ListBucket
-        Resource: arn:aws:s3:::${self:custom.bucket_name}
+        Resource: arn:aws:s3:::${self:custom.data_bucket_name}
       - Effect: Allow
         Action:
           - s3:PutObject
-        Resource: arn:aws:s3:::${self:custom.bucket_name}/*
+        Resource: arn:aws:s3:::${self:custom.data_bucket_name}/*
 
 resources:
   Resources:
 
-    GrilledCheeseSandwitchBucket:
+    DataBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:custom.bucket_name}
+        BucketName: ${self:custom.data_bucket_name}
+        VersioningConfiguration:
+          Status: Enabled
+
+    ETLBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.etl_bucket_name}
         VersioningConfiguration:
           Status: Enabled
 
@@ -61,7 +69,7 @@ resources:
               Version: '2012-10-17'
               Statement:
                 - Effect: Allow
-                  Action: 
+                  Action:
                     - 'glue:*'
                   Resource: '*'
 
@@ -72,7 +80,7 @@ resources:
         Role: !GetAtt GlueCrawlerRole.Arn
         Targets:
           S3Targets:
-            - Path: s3://${self:custom.bucket_name}
+            - Path: s3://${self:custom.data_bucket_name}
         SchemaChangePolicy:
           UpdateBehavior: 'UPDATE_IN_DATABASE'
           DeleteBehavior: 'DEPRECATE_IN_DATABASE'
@@ -82,10 +90,10 @@ resources:
       Properties:
         Command: 
           Name: 'glueetl'
-          ScriptLocation: s3://${self:custom.bucket_name}/scripts/my_etl_script.py
+          ScriptLocation: s3://${self:custom.etl_bucket_name}/scripts/my_etl_script.py
         Role: !GetAtt GlueCrawlerRole.Arn
         DefaultArguments: 
-          '--TempDir': s3://${self:custom.bucket_name}/temp
+          '--TempDir': s3://${self:custom.etl_bucket_name}/temp
           '--enable-metrics': ''
           '--job-bookmark-option': 'job-bookmark-enable'
           '--job-language': 'python'
@@ -106,3 +114,4 @@ plugins:
   - serverless-python-requirements
   - serverless-iam-roles-per-function
   - serverless-dotenv-plugin
+  - ./emptyBucketPlugin

@@ -25,4 +25,7 @@ var/
 node_modules/
 package-lock.json
 
+# python stuff
 .env
+.env.*
+__pycache__/
