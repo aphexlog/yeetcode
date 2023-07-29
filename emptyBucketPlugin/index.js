@@ -16,10 +16,9 @@ class EmptyBucketPlugin {
   async emptyBucket() {
     const stage = this.serverless.service.provider.stage;
     if (stage !== 'prod') {
-      const bucketNames = [
-        this.serverless.service.custom.data_bucket_name,
-        this.serverless.service.custom.etl_bucket_name
-      ];
+      const bucketNames = Object.entries(this.serverless.service.custom)
+        .filter(([key]) => key.endsWith('_bucket_name'))
+        .map(([, value]) => value);
 
       for (let bucket of bucketNames) {
         const listParams = {

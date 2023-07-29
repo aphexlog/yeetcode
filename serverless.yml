@@ -7,20 +7,38 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: python3.9
-  stage: ${opt:stage, 'dev'} # defaults to 'dev' if no option is provided
+  stage: ${opt:stage, 'dev'}
 
 package:
-  include:
+  individually: true
+  patterns:
     - '!./**'
-    - './src/**'
 
 custom:
-  data_bucket_name: ${self:service}-${self:provider.stage}-bucket
-  etl_bucket_name: ${self:service}-${self:provider.stage}-etl-bucket
+  data_bucket_name: ${self:service}-${self:provider.stage}-data-bucket
+  scripts_bucket_name: ${self:service}-${self:provider.stage}-script-bucket
+  logs_bucket_name: ${self:service}-${self:provider.stage}-logs-bucket
+  assets:
+    auto: true
+    targets:
+      - bucket: ${self:custom.scripts_bucket_name}
+        files:
+        - source: scripts
+          globs:
+            - '**'
+  pythonRequirements:
+    dockerizePip: non-linux
+    layer: true
+    slim: true
 
 functions:
   hello:
-    handler: src.handler.lambda_handler
+    handler: lambda.handler.lambda_handler
+    package:
+      include:
+        - ./lambda/handler.py
+    layers:
+      - Ref: PythonRequirementsLambdaLayer
     environment:
       BUCKET_NAME: ${self:custom.data_bucket_name}
       RAPIDAPI_KEY: ${env:RAPIDAPI_KEY}
@@ -44,10 +62,17 @@ resources:
         VersioningConfiguration:
           Status: Enabled
 
+    LogsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.logs_bucket_name}
+        VersioningConfiguration:
+          Status: Enabled
+
     ETLBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: ${self:custom.etl_bucket_name}
+        BucketName: ${self:custom.scripts_bucket_name}
         VersioningConfiguration:
           Status: Enabled
 
@@ -76,7 +101,7 @@ resources:
     GlueCrawler:
       Type: AWS::Glue::Crawler
       Properties:
-        DatabaseName: MyGlueDatabase # replace with your database name
+        DatabaseName: MyGlueDatabase
         Role: !GetAtt GlueCrawlerRole.Arn
         Targets:
           S3Targets:
@@ -90,28 +115,19 @@ resources:
       Properties:
         Command: 
           Name: 'glueetl'
-          ScriptLocation: s3://${self:custom.etl_bucket_name}/scripts/my_etl_script.py
+          ScriptLocation: s3://${self:custom.scripts_bucket_name}/etl.py
         Role: !GetAtt GlueCrawlerRole.Arn
-        DefaultArguments: 
-          '--TempDir': s3://${self:custom.etl_bucket_name}/temp
+        DefaultArguments:
+          '--TempDir': s3://${self:custom.scripts_bucket_name}/temp
           '--enable-metrics': ''
           '--job-bookmark-option': 'job-bookmark-enable'
           '--job-language': 'python'
+          '--enable-continuous-cloudwatch-log': 'true'
 
-    # LogicalID:
-    #   Type: AWS::Glue::Database
-    #   Properties:
-    #     CatalogId: "String" # Required
-    #     DatabaseInput:
-    #       CreateTableDefaultPermissions:
-    #         -
-    #       Description: "String"
-    #       LocationUri: "String"
-    #       Name: "String"
-    #       Parameters: JSON
 
 plugins:
   - serverless-python-requirements
   - serverless-iam-roles-per-function
   - serverless-dotenv-plugin
+  - serverless-s3-deploy
   - ./emptyBucketPlugin
