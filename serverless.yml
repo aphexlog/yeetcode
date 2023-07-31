@@ -124,6 +124,19 @@ resources:
           '--job-language': 'python'
           '--enable-continuous-cloudwatch-log': 'true'
 
+    # GlueDatabase: # TODO: for some reason AWSAdministratorAccess gets access denied when trying to create this resource
+    #   Type: AWS::Glue::Database
+    #   Properties:
+    #     CatalogId: "testDB" # Required
+    #     DatabaseInput:
+    #       # CreateTableDefaultPermissions:
+    #       #   - Principal:
+    #       #       DataLakePrincipalIdentifier: "String"
+    #       #     Permissions:
+    #       #       - "ALL" # Required
+    #       Description: "Test description"
+    #       # LocationUri: "String"
+    #       Name: "recipies"
 
 plugins:
   - serverless-python-requirements
