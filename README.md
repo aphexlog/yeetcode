@@ -4,7 +4,7 @@
 
 ## ⚡ Features  
 - Fetch LeetCode problems directly into your workspace  
-- Dynamically generate test cases using AI  
+- Dynamically generate high-quality test cases using AI  
 - Run and validate your solutions locally  
 - Optimized for AWS, keeping costs minimal  
 - No passive costs—compute only when needed  
@@ -30,8 +30,8 @@ yeetcode test # From inside the problem directory
 ## 💡 What YeetCode Does  
 
 1. Fetches problem data from LeetCode.  
-2. Generates test cases on demand.  
+2. Generates high-quality test cases on demand using AI.  
 3. Runs tests locally using Python’s unittest or pytest framework.  
 4. Caches results to minimize redundant API calls.
 
-**Note:** The backend components like AWS Lambda, Bedrock/SageMaker, DynamoDB/S3 are abstracted away. You don’t need to worry about them—just focus on solving problems!
+**Note:** The backend components are abstracted away. You don’t need to worry about them—just focus on solving problems!
