@@ -6,8 +6,6 @@
 - Fetch LeetCode problems directly into your workspace  
 - Dynamically generate high-quality test cases using AI  
 - Run and validate your solutions locally  
-- Optimized for AWS, keeping costs minimal  
-- No passive costs—compute only when needed  
 
 ## 🛠 Installation & Usage  
 
