@@ -33,3 +33,18 @@ yeetcode test # From inside the problem directory
 4. Caches results to minimize redundant API calls.
 
 **Note:** The backend components are abstracted away. You don’t need to worry about them—just focus on solving problems!
+
+## 📚 Sample Applications
+
+### Hello World in Go
+
+1. Navigate to the `samples` directory.
+2. Run the following command in your terminal:
+
+```bash
+go run hello_world.go
+```
+
+This will compile and execute the Go program, printing "Hello, World!" to the console.
+
+Just a generated go app, whatever, who cares. I think I'm going to rewrite this project in Go.
